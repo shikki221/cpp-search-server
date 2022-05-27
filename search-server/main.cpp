@@ -11,7 +11,7 @@
  
 using namespace std; 
  
-#define float EPSILON 1e-6 
+float EPSILON = 1e-6;
   
 const int MAX_RESULT_DOCUMENT_COUNT = 5;  
   
@@ -340,10 +340,8 @@ void TestSearchAddDocuments()
  
         SearchServer server; 
         
-        ASSERT_EQUAL(server.size, 0);
         server.AddDocument(doc_id_1, document_1, DocumentStatus::ACTUAL, ratings); 
         server.AddDocument(doc_id_3, document_3, DocumentStatus::ACTUAL, ratings); 
-        ASSERT_EQUAL(server.size, 2);
  
         const std::string content = "dog"s; 
  
@@ -375,9 +373,9 @@ void TestNoStopWords()
 
         ASSERT_EQUAL(found_docs.size(), 1); 
         ASSERT_EQUAL(found_docs[0].id, doc_id); 
-        ASSERT(found_docs.empty()); 
+        ASSERT(!found_docs.empty()); 
     } 
- 
+}
 void TestSupportMinusWords() 
 { 
     const int doc_id_1 = 0; 
@@ -404,7 +402,6 @@ void TestSupportMinusWords()
  
 void TestDocumentMatching() 
 { 
- 
     const int doc_id_1 = 0; 
     const int doc_id_2 = 1; 
     const int doc_id_3 = 2; 
@@ -437,7 +434,6 @@ void TestDocumentMatching()
  
 void TestSortByRelevance() 
 { 
- 
     const int doc_id_1 = 0; 
     const int doc_id_2 = 1; 
     const int doc_id_3 = 2; 
@@ -496,8 +492,7 @@ void TestCalculateRatings()
     { 
         auto result1 = server.FindTopDocuments(content); 
  
-        ASSERT_HINT((abs(result1[0].rating + 1) < EPSILON), "Incorrect rating calculation"s);
-        ASSERT_HINT((found_docs1[0].rating < 0), "Miscalculation of negative rating"s);
+        ASSERT_HINT((abs(result1[0].rating) > EPSILON), "Incorrect rating calculation"s);
     } 
 } 
  
@@ -587,7 +582,6 @@ void TestSearchDocumentsByStatus()
     server.AddDocument(doc_id_3, document_3, DocumentStatus::ACTUAL, { 5 }); 
     server.AddDocument(doc_id_4, document_4, DocumentStatus::IRRELEVANT, { 7 }); 
     server.AddDocument(doc_id_5, document_5, DocumentStatus::REMOVED, { -2 }); 
-    server.AddDocument(doc_id_6, document_6, DocumentStatus::DEAD, { -2 }); 
  
     { 
         auto results = server.FindTopDocuments(content, 
@@ -633,15 +627,6 @@ void TestSearchDocumentsByStatus()
         ASSERT_EQUAL(results.size(), 1); 
         ASSERT_EQUAL(results[0].id, doc_id_5); 
     }
-
-    { 
-        auto results = server.FindTopDocuments(content, 
-            []([[maybe_unused]] int document_id, DocumentStatus status, [[maybe_unused]] int rating) 
-            { 
-                return (ASSERT_HINT(results.empty, "Status doesn't exist"s));
-                //  вот это я наплакал 
-            }); 
-    } 
 
     { 
         auto results = server.FindTopDocuments(content, 
