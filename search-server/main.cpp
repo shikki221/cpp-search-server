@@ -340,10 +340,10 @@ void TestSearchAddDocuments()
  
         SearchServer server; 
         
-        ASSERT_EQUAL(server.size, 0); //  что он пустой блять
+        ASSERT_EQUAL(server.size, 0);
         server.AddDocument(doc_id_1, document_1, DocumentStatus::ACTUAL, ratings); 
         server.AddDocument(doc_id_3, document_3, DocumentStatus::ACTUAL, ratings); 
-        ASSERT_EQUAL(server.size, 2); //  что он увеличивается бляьт
+        ASSERT_EQUAL(server.size, 2);
  
         const std::string content = "dog"s; 
  
