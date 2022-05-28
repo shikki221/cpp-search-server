@@ -687,16 +687,16 @@ void TestCorrectCalcRelevance()
     server.AddDocument(doc_id_2, document_2, DocumentStatus::ACTUAL, { 7, 2, 7 }); 
     server.AddDocument(doc_id_3, document_3, DocumentStatus::ACTUAL, { 5, -12, 2, 1 }); 
  
-    double value_1 = abs(log(3) / 2); 
-    double value_2 = abs(log(3) / 6); 
-    double value_3 = abs(log(3) / 1); 
+    double value_1 = log(3) / 2; 
+    double value_2 = log(3) / 6; 
+    double value_3 = log(3) / 1; 
  
     auto results = server.FindTopDocuments(content, DocumentStatus::ACTUAL); 
  
     ASSERT_EQUAL(results.size(), 3); 
-    ASSERT((results[0].relevance - value_1) < EPSILON); 
-    ASSERT((results[1].relevance - value_2) < EPSILON); 
-    ASSERT((results[2].relevance - value_3) < EPSILON); 
+    ASSERT(abs(results[0].relevance - value_1) < EPSILON); 
+    ASSERT(abs(results[1].relevance - value_2) < EPSILON); 
+    ASSERT(abs(results[2].relevance - value_3) < EPSILON); 
 } 
 
 void TestEmptyContent() 
