@@ -694,9 +694,9 @@ void TestCorrectCalcRelevance()
     auto results = server.FindTopDocuments(content, DocumentStatus::ACTUAL); 
  
     ASSERT_EQUAL(results.size(), 3); 
-    ASSERT(abs(results[0].relevance - value_1) < EPSILON); 
-    ASSERT(abs(results[1].relevance - value_2) < EPSILON); 
-    ASSERT(abs(results[2].relevance - value_3) < EPSILON); 
+    ASSERT(abs(results[0].relevance - value_1) > EPSILON); 
+    ASSERT(abs(results[1].relevance - value_2) > EPSILON); 
+    ASSERT(abs(results[2].relevance - value_3) > EPSILON); 
 } 
 
 void TestEmptyContent() 
