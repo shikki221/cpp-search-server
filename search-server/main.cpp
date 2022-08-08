@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <utility>
@@ -9,6 +10,7 @@
 
 using namespace std;
 
+const double EPSILON = 1e-6;
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 string ReadLine() {
@@ -24,8 +26,7 @@ int ReadLineWithNumber() {
     return result;
 }
 
-bool IsValidWord(const string &word) {
-    // A valid word must not contain special characters in range [0, 31]
+bool IsValidWord(const string& word) {
     return none_of(word.begin(), word.end(), [](char symbol) { return symbol >= 0 && symbol < 31; });
 }
 
@@ -67,9 +68,6 @@ template <typename StringContainer>
 set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
     set<string> non_empty_strings;
     for (const string& str : strings) {
-        if (!IsValidWord(str)) {
-            throw invalid_argument("Invalid word in the document: "s + str);
-        }
         if (!str.empty()) {
             non_empty_strings.insert(str);
         }
@@ -91,6 +89,7 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
+        CheckValidStopWord(stop_words_);
     }
 
     explicit SearchServer(const string& stop_words_text)
@@ -104,7 +103,7 @@ public:
         const vector<string> words = SplitDocumentIntoNoWords(document);
         const double inverse_word_count = 1. / words.size();
 
-        for (const string &word : words)
+        for (const string& word : words)
             word_to_document_freqs_[word][document_id] += inverse_word_count;
 
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -115,12 +114,13 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         Query query;
         if (!ParseQuery(raw_query, query)) {
+            // Возврат значения через аргумент - не интуитивно понятное действие Перестройте метод так, что бы значение возвращалось через return. А вот ошибку тут удобнее всего возвращать как раз через исключения. 
             throw invalid_argument("Search error 1"s);
         }
         auto matched_documents = FindAllDocuments(query, document_predicate);
  
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
-            if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+            if (abs(lhs.relevance - rhs.relevance) < EPSILON) {
                 return lhs.rating > rhs.rating;
             } else {
                 return lhs.relevance > rhs.relevance;
@@ -129,11 +129,10 @@ public:
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
- 
-        // Exchange matched_documents and result instead of deep copying
+
         return matched_documents;
     }
-    
+
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
         Query query;
         if (!ParseQuery(raw_query, query)) {
@@ -191,9 +190,10 @@ public:
 
 private:
     struct DocumentData {
-        int rating;
+        int rating = 0;
         DocumentStatus status;
     };
+
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
@@ -203,23 +203,27 @@ private:
         return stop_words_.count(word) > 0;
     }
 
-    static int ComputeAverageRating(const vector<int>& ratings) {
-        if (ratings.empty()) {
-            return 0;
+    void CheckValidStopWord(const set<string>& words) {
+        for (const string& word : words) {
+            if (!IsValidWord(word)) {
+                throw invalid_argument("Invalid word in the stop word"s );
+            }
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
-        return rating_sum / static_cast<int>(ratings.size());
     }
+
+    static int ComputeAverageRating(const std::vector<int>& ratings) { 
+        if (ratings.empty()) { 
+            return 0; 
+        } 
+        return std::accumulate(ratings.begin(), ratings.end(), 0) / static_cast<int>(ratings.size()); 
+    } 
 
     struct QueryWord {
         string data;
         bool is_minus;
         bool is_stop;
     };
-
+/*
     [[nodiscard]] bool ParseQueryWord(string text, QueryWord& result) const {
         result = {};
         if (text.empty()) {
@@ -237,6 +241,22 @@ private:
         result = QueryWord{text, is_minus, IsStopWord(text)};
         return true;
     }
+*/
+    [[nodiscard]] bool ParseQueryWord(string word, QueryWord& query_word) const {
+        query_word = {};
+        bool is_minus = false;
+        if (word[0] == '-') {
+            is_minus = true;
+            word = word.substr(1);
+        }
+
+        if (word.empty() || word[0] == '-' || !IsValidWord(word))
+            return false;
+
+        query_word = {word, is_minus, IsStopWord(word)};
+        return true;
+    }
+
     struct Query {
         set<string> plus_words;
         set<string> minus_words;
@@ -296,7 +316,7 @@ private:
         return matched_documents;
     }
 
-    pair<bool, string> CheckDocumentInput(int document_id, const string &document) {
+    pair<bool, string> CheckDocumentInput(int document_id, const string& document) {
         if (document_id < 0)
             return {false, "Negative document index is not expected"s};
 
@@ -309,10 +329,10 @@ private:
         return {true, ""s};
     }
 
-    vector<string> SplitDocumentIntoNoWords(const string &text) const {
+    vector<string> SplitDocumentIntoNoWords(const string& text) const {
         vector<string> words;
 
-        for (const string &word : SplitIntoWords(text)) {
+        for (const string& word : SplitIntoWords(text)) {
             if (!IsValidWord(word)) {
                 throw invalid_argument("Invalid word in the document: "s + word);
             }
@@ -324,6 +344,7 @@ private:
         return words;
     }
 };
+
 // ------------ Пример использования ----------------
 
 void PrintDocument(const Document& document) {
