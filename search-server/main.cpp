@@ -79,7 +79,7 @@ enum class DocumentStatus {
     ACTUAL,
     IRRELEVANT,
     BANNED,
-    REMOVED,
+    REMOVED
 };
 
 class SearchServer {
@@ -114,11 +114,11 @@ public:
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
         Query query;
         if (!ParseQuery(raw_query, query)) {
-            // Возврат значения через аргумент - не интуитивно понятное действие Перестройте метод так, что бы значение возвращалось через return. А вот ошибку тут удобнее всего возвращать как раз через исключения. 
+            // Возврат значения через аргумент - не интуитивно понятное действие Перестройте метод так, что бы значение возвращалось через return. А вот ошибку тут удобнее всего возвращать как раз через исключения. (c) Семен Поленок
             throw invalid_argument("Search error 1"s);
         }
         auto matched_documents = FindAllDocuments(query, document_predicate);
- 
+
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
             if (abs(lhs.relevance - rhs.relevance) < EPSILON) {
                 return lhs.rating > rhs.rating;
@@ -191,7 +191,7 @@ public:
 private:
     struct DocumentData {
         int rating = 0;
-        DocumentStatus status;
+        DocumentStatus status = DocumentStatus::IRRELEVANT;
     };
 
     const set<string> stop_words_;
@@ -223,25 +223,7 @@ private:
         bool is_minus;
         bool is_stop;
     };
-/*
-    [[nodiscard]] bool ParseQueryWord(string text, QueryWord& result) const {
-        result = {};
-        if (text.empty()) {
-            return false;
-        }
-        bool is_minus = false;
-        if (text[0] == '-') {
-            is_minus = true;
-            text = text.substr(1);
-        }
-        if (text.empty() || text[0] == '-' || !IsValidWord(text)) {
-            return false;
-        }
- 
-        result = QueryWord{text, is_minus, IsStopWord(text)};
-        return true;
-    }
-*/
+
     [[nodiscard]] bool ParseQueryWord(string word, QueryWord& query_word) const {
         query_word = {};
         bool is_minus = false;
