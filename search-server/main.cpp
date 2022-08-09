@@ -178,7 +178,7 @@ public:
 private:
     struct DocumentData {
         int rating = 0;
-        DocumentStatus status;
+        DocumentStatus status = DocumentStatus::IRRELEVANT;
     };
 
     const set<string> stop_words_;
