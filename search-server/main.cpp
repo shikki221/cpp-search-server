@@ -26,7 +26,7 @@ int ReadLineWithNumber() {
     return result;
 }
 
-bool IsValidWord(const string& word) {
+bool IsValidWord(const string &word) {
     return none_of(word.begin(), word.end(), [](char symbol) { return symbol >= 0 && symbol < 31; });
 }
 
@@ -79,7 +79,7 @@ enum class DocumentStatus {
     ACTUAL,
     IRRELEVANT,
     BANNED,
-    REMOVED
+    REMOVED,
 };
 
 class SearchServer {
@@ -103,7 +103,7 @@ public:
         const vector<string> words = SplitDocumentIntoNoWords(document);
         const double inverse_word_count = 1. / words.size();
 
-        for (const string& word : words)
+        for (const string &word : words)
             word_to_document_freqs_[word][document_id] += inverse_word_count;
 
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
@@ -112,11 +112,7 @@ public:
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            // Возврат значения через аргумент - не интуитивно понятное действие Перестройте метод так, что бы значение возвращалось через return. А вот ошибку тут удобнее всего возвращать как раз через исключения. (c) Семен Поленок
-            throw invalid_argument("Search error 1"s);
-        }
+        const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
@@ -134,28 +130,19 @@ public:
     }
 
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            throw invalid_argument("Search error 2"s);
-        }
+        const Query query = ParseQuery(raw_query);
         return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
             return document_status == status;
         });
     }
     
     vector<Document> FindTopDocuments(const string& raw_query) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            throw invalid_argument("Search error 3"s);
-        }
+        const Query query = ParseQuery(raw_query);
         return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) {
-            throw invalid_argument("Document matching error on request "s + raw_query);
-        }
+        const Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -191,7 +178,7 @@ public:
 private:
     struct DocumentData {
         int rating = 0;
-        DocumentStatus status = DocumentStatus::IRRELEVANT;
+        DocumentStatus status;
     };
 
     const set<string> stop_words_;
@@ -224,42 +211,40 @@ private:
         bool is_stop;
     };
 
-    [[nodiscard]] bool ParseQueryWord(string word, QueryWord& query_word) const {
-        query_word = {};
-        bool is_minus = false;
-        if (word[0] == '-') {
-            is_minus = true;
-            word = word.substr(1);
-        }
-
-        if (word.empty() || word[0] == '-' || !IsValidWord(word))
-            return false;
-
-        query_word = {word, is_minus, IsStopWord(word)};
-        return true;
-    }
-
     struct Query {
         set<string> plus_words;
         set<string> minus_words;
     };
 
-    [[nodiscard]] bool ParseQuery(const string& text, Query& result) const {
-        result = {};
+    QueryWord ParseQueryWord(string text) const {
+        if (text.empty()) {
+            throw invalid_argument("Empty"s);
+        }
+        bool is_minus = false;
+        if (text[0] == '-') {
+            is_minus = true;
+            text = text.substr(1);
+        }
+        if (text.empty() || text[0] == '-' || !IsValidWord(text)) {
+            throw invalid_argument("Not valid word: "s + text);
+        }
+ 
+        return {text, is_minus, IsStopWord(text)};
+    }
+
+    Query ParseQuery(const string& text) const {
+        Query query;
         for (const string& word : SplitIntoWords(text)) {
-            QueryWord query_word;
-            if (!ParseQueryWord(word, query_word)) {
-                return false;
-            }
+            const QueryWord query_word = ParseQueryWord(word);
             if (!query_word.is_stop) {
                 if (query_word.is_minus) {
-                    result.minus_words.insert(query_word.data);
+                    query.minus_words.insert(query_word.data);
                 } else {
-                    result.plus_words.insert(query_word.data);
+                    query.plus_words.insert(query_word.data);
                 }
             }
         }
-        return true;
+        return query;
     }
 
     double ComputeWordInverseDocumentFreq(const string& word) const {
@@ -298,7 +283,7 @@ private:
         return matched_documents;
     }
 
-    pair<bool, string> CheckDocumentInput(int document_id, const string& document) {
+    pair<bool, string> CheckDocumentInput(int document_id, const string &document) {
         if (document_id < 0)
             return {false, "Negative document index is not expected"s};
 
@@ -311,10 +296,10 @@ private:
         return {true, ""s};
     }
 
-    vector<string> SplitDocumentIntoNoWords(const string& text) const {
+    vector<string> SplitDocumentIntoNoWords(const string &text) const {
         vector<string> words;
 
-        for (const string& word : SplitIntoWords(text)) {
+        for (const string &word : SplitIntoWords(text)) {
             if (!IsValidWord(word)) {
                 throw invalid_argument("Invalid word in the document: "s + word);
             }
@@ -326,7 +311,6 @@ private:
         return words;
     }
 };
-
 // ------------ Пример использования ----------------
 
 void PrintDocument(const Document& document) {
