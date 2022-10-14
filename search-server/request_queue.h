@@ -19,13 +19,13 @@ public:
 
 private:
     struct QueryResult {
-        uint64_t timestamp;
-        size_t results;
+        uint64_t timestamp = 0;
+        size_t results = 0;
     };
     std::deque<QueryResult> requests_;
     const SearchServer& search_server_;
-    int no_results_requests_;
-    uint64_t current_time_;
+    int no_results_requests_ = 0;
+    uint64_t current_time_ = 0;
     const static int sec_in_day_ = 1440;
 
     void AddRequest(size_t results_num);
