@@ -10,7 +10,6 @@
 class RequestQueue {
 public:
     explicit RequestQueue(const SearchServer& search_server);
-    // сделаем "обёртки" для всех методов поиска, чтобы сохранять результаты для нашей статистики
     template <typename DocumentPredicate>
     std::vector<Document> AddFindRequest(const std::string& raw_query, DocumentPredicate document_predicate);
 
@@ -22,7 +21,7 @@ public:
 private:
     struct QueryResult {
         std::vector<Document> document_results_;
-        bool no_result;// определите, что должно быть в структуре
+        bool no_result;
     };
     std::deque<QueryResult> requests_;
     const static int min_in_day_ = 1440;

@@ -14,9 +14,10 @@ void SearchServer::AddDocument(int document_id, const std::string& document, Doc
     const double inv_word_count = 1.0 / words.size();
     for (const string& word : words) {
         word_to_document_freqs_[word][document_id] += inv_word_count;
+        documents_words_freqs_[document_id][word] += inv_word_count;
     }
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
-    document_ids_.push_back(document_id);
+    document_ids_.insert(document_id);
 }
 
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, DocumentStatus status) const {
@@ -124,35 +125,21 @@ double SearchServer::ComputeWordInverseDocumentFreq(const std::string& word) con
     return std::log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
 }
 
-const std::map<std::string, double>& SearchServer::GetWordFrequencies(int document_id) const {
-    static std::map<std::string, double> result;
-    result.clear();
-    for (const auto& [word, id_to_freq] : word_to_document_freqs_) {
-        auto found = id_to_freq.find(document_id);
-        if (found != id_to_freq.end()) {
-            result[word] = found->second;
-        }
+const std::map<string, double> &SearchServer::GetWordFrequencies(int document_id) const {
+    if(documents_words_freqs_.find(document_id) == documents_words_freqs_.end()) {
+        return empty_map;
     }
-    return result;
+    return documents_words_freqs_.at(document_id);
 }
 
 void SearchServer::RemoveDocument(int document_id) {
+    if(!document_ids_.count(document_id)){
+        return;
+    }
+    for(const auto& [word, _] : documents_words_freqs_.at(document_id)){
+        word_to_document_freqs_.at(word).erase(document_id);
+    }
+    documents_words_freqs_.erase(document_id);
     documents_.erase(document_id);
-
-    std::vector<int>::const_iterator erase_at = find(document_ids_.begin(), document_ids_.end(), document_id);
-    if (erase_at != document_ids_.end()) {
-        document_ids_.erase(erase_at);
-    }
-    
-    std::vector<std::string> removed_words;
-    for (auto& [word, id_to_freq] : word_to_document_freqs_) {
-        id_to_freq.erase(document_id);
-        if (word_to_document_freqs_[word].empty()) {
-            removed_words.push_back(word);
-        }
-    }
-    for (std::string s : removed_words) {
-        word_to_document_freqs_.erase(s);
-    }
+    document_ids_.erase(document_id);
 }
-
