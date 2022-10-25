@@ -1,5 +1,8 @@
-﻿#pragma once
+#pragma once
+
 #include <iostream>
+
+using namespace std;
 
 enum class DocumentStatus {
     ACTUAL,
@@ -10,6 +13,7 @@ enum class DocumentStatus {
 
 struct Document {
     Document() = default;
+
     Document(int id, double relevance, int rating);
 
     int id = 0;
@@ -17,4 +21,6 @@ struct Document {
     int rating = 0;
 };
 
-std::ostream& operator<<(std::ostream& os, const Document& doc);
+std::ostream& operator<<(std::ostream& out, const Document& document);
+
+void PrintDocument(const Document& document);

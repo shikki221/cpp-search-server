@@ -1,4 +1,7 @@
-﻿#include "document.h"
+#include <iostream>
+#include "document.h"
+
+using namespace std;
 
 Document::Document(int id, double relevance, int rating)
     : id(id)
@@ -6,8 +9,17 @@ Document::Document(int id, double relevance, int rating)
     , rating(rating) {
 }
 
-std::ostream& operator<<(std::ostream& os, const Document& doc) {
-    os << "{ document_id = " << doc.id << ", relevance = " << doc.relevance
-        << ", rating = " << doc.rating << " }";
-    return os;
+std::ostream& operator<<(std::ostream& out, const Document& document) {
+    out << "{ "s
+        << "document_id = "s << document.id << ", "s
+        << "relevance = "s << document.relevance << ", "s
+        << "rating = "s << document.rating << " }"s;
+    return out;
+}
+
+void PrintDocument(const Document& document) {
+    std::cout << "{ "s
+         << "document_id = "s << document.id << ", "s
+         << "relevance = "s << document.relevance << ", "s
+         << "rating = "s << document.rating << " }"s << std::endl;
 }
